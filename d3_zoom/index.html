@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>D3.js Chart with Zoom and Pan</title>
+    <script src="https://d3js.org/d3.v3.min.js"></script>
+</head>
+<body>
+    <svg id="chart" width="400" height="400"></svg>
+
+    <script>
+        var svgWidth = 400,
+            svgHeight = 400,
+            originalLine = { "x1": 25, "y1": 25, "x2": 125, "y2": 125, "stroke_width": 2 },
+            margin = { "top": 25, "right": 25, "bottom": 50, "left": 50 },
+            width = svgWidth - margin.left - margin.right,
+            height = svgHeight - margin.top - margin.bottom;
+
+        var svgViewport = d3.select("#chart")
+            .attr("width", svgWidth)
+            .attr("height", svgHeight);
+
+        var xAxisScale = d3.scale.linear()
+            .domain([0, width])
+            .range([0, width]);
+
+        var yAxisScale = d3.scale.linear()
+            .domain([0, height]) // Set y-axis domain from 0 to height
+            .range([height, 0]); // Inverted domain for the y-axis
+
+        var xAxis = d3.svg.axis()
+            .scale(xAxisScale)
+            .orient("bottom")
+            .ticks(5);
+
+        var yAxis = d3.svg.axis()
+            .scale(yAxisScale)
+            .orient("left")
+            .ticks(5);
+
+        var innerSpace = svgViewport.append("g")
+            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+        innerSpace.append("g")
+            .attr("class", "x axis")
+            .attr("transform", "translate(0," + height + ")")
+            .call(xAxis);
+
+        innerSpace.append("g")
+            .attr("class", "y axis")
+            .call(yAxis);
+
+        var line = innerSpace.append("line")
+            .attr("x1", function (d) { return xAxisScale(originalLine.x1); })
+            .attr("y1", function (d) { return yAxisScale(originalLine.y1); })
+            .attr("x2", function (d) { return xAxisScale(originalLine.x2); })
+            .attr("y2", function (d) { return yAxisScale(originalLine.y2); })
+            .attr("stroke", "gray")
+            .attr("stroke-width", function (d) { return originalLine.stroke_width; });
+
+        // Define a zoom behavior
+        var zoom = d3.behavior.zoom()
+            .x(xAxisScale)
+            .y(yAxisScale)
+            .scaleExtent([0.2, Infinity]) // Allow zooming from 0.2x to infinity
+            .on("zoom", zoomFunction);
+
+        // Apply zoom behavior to the inner space
+        svgViewport.call(zoom);
+
+        function zoomFunction() {
+            // Limit the minimum scale value
+            var minScale = 0.2;
+            if (zoom.scale() < minScale) {
+                zoom.scale(minScale);
+            }
+
+            // Update axes
+            innerSpace.select(".x.axis").call(xAxis);
+            innerSpace.select(".y.axis").call(yAxis);
+
+            // Update the line based on zoom and pan
+            line
+                .attr("x1", function (d) { return xAxisScale(originalLine.x1); })
+                .attr("y1", function (d) { return yAxisScale(originalLine.y1); })
+                .attr("x2", function (d) { return xAxisScale(originalLine.x2); })
+                .attr("y2", function (d) { return yAxisScale(originalLine.y2); })
+                .attr("stroke-width", function (d) { return originalLine.stroke_width / zoom.scale(); });
+        }
+    </script>
+</body>
+</html>
